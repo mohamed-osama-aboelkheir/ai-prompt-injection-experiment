@@ -1,0 +1,44 @@
+# Secrets & local env
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+
+# Logs (may contain transcripts / extracted data)
+*.log
+logs/
+app/backend/logs/
+
+# Eval outputs: our published results are committed (eval/results/), but the spend
+# ledger is per user (a clone must start at $0 against its own caps), and new runs
+# default to results.csv.
+eval/results/spend.json
+eval/results/results.csv
+eval/results/results_runs/
+eval/results/smoke*
+eval/out/
+
+# Not part of the published experiment
+slides/
+examples/
+eval/payloads/
+attack/output/_archive/
+attack/output/*/PAUSE
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/

@@ -1,0 +1,14 @@
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy>=2.0,<2.1   # 2.1 maps postgresql:// to psycopg v3; the app uses psycopg2
+Flask-CORS==4.0.0
+PyJWT>=2.10.1
+bcrypt==4.1.2
+psycopg2-binary==2.9.9
+python-dotenv>=1.1.0   # fastmcp (Pydantic AI's MCP client) needs >=1.1
+mcp>=2,<3
+requests>=2.31.0
+# Victim + guardrail agents: Pydantic AI, multi-provider (Anthropic + OpenAI), with the MCP client.
+pydantic-ai-slim[anthropic,openai,mcp]>=2.54,<3
+# The llm_guard defense runs in its own container (app/llm_guard_service/): llm-guard's
+# strict pins (torch, transformers, ...) can't co-resolve quickly with this stack.

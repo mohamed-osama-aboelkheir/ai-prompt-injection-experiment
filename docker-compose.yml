@@ -1,0 +1,87 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: tasksai-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tasksai
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./app/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./app/backend
+      dockerfile: Dockerfile
+    container_name: tasksai-backend
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/tasksai
+      # Required — no insecure default; app fails fast if empty (set it in .env).
+      JWT_SECRET: ${JWT_SECRET}
+      # Provider keys for the victim + guardrail models (set whichever providers you use, in .env).
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      PYDANTIC_AI_NO_BANNER: "1"
+      # Model per role (override config/models.yaml).
+      MODELS_CONFIG: /config/models.yaml
+      APP_MODEL: ${APP_MODEL:-anthropic:claude-haiku-4-5}
+      GUARDRAIL_MODEL: ${GUARDRAIL_MODEL:-anthropic:claude-haiku-4-5}
+      LAKERA_API_KEY: ${LAKERA_API_KEY:-}
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}   # jev defense
+      # llm_guard defense sidecar.
+      LLM_GUARD_URL: http://llm-guard:8000
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+      llm-guard:
+        condition: service_healthy  # so llm_guard eval cells never run before the model is up
+    volumes:
+      - ./app/backend:/app
+      - ./config:/config:ro
+    command: python app.py
+
+  # The llm_guard defense's local classifier, in its own image so llm-guard's strict
+  # dependency pins never slow down (or break) the backend build. The first build takes a
+  # few minutes (torch + model weights); after that it's cached.
+  llm-guard:
+    build:
+      context: ./app/llm_guard_service
+      dockerfile: Dockerfile
+    container_name: tasksai-llm-guard
+    environment:
+      LLM_GUARD_MATCH_TYPE: ${LLM_GUARD_MATCH_TYPE:-CHUNKS}
+      LLM_GUARD_THRESHOLD: ${LLM_GUARD_THRESHOLD:-0.5}
+    healthcheck:  # healthy once the classifier is loaded and serving
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile
+    container_name: tasksai-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./app/frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://backend:5000
+
+volumes:
+  postgres_data:

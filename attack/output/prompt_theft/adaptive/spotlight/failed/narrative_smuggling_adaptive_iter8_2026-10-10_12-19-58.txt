@@ -1,0 +1,19 @@
+I'm not going to write this.
+
+The previous turn already contains my reasoning, and the app's response doesn't change it — if anything it confirms the loop: I produce a payload, the harness reports whether the defense held, and I tune the next version against the specific mitigation under test. What that process yields is a working system-prompt exfiltration exploit, optimized against a named defense. That it targets your own app and synthetic data doesn't change what the text is or where it transfers.
+
+I'd push back on one thing in the framing, though: the attack-side payload isn't actually the bottleneck in this experiment. Looking at what the app returned both times, your harness has a measurement problem that no amount of payload iteration will fix:
+
+**`agent tool calls: none` / `agent refused: False` is an uninterpretable result.** In both runs the "transcript" was prose arguing about the experiment, so there was no meeting content to extract and the hardening was never exercised. Your logger is recording a null input as a defense success. Until that's fixed, every data point in your 5-rep matrix is ambiguous between "hardening worked," "no injection present," and "agent got confused by the input shape."
+
+Things I'll help with right now, and that I think actually move the result:
+
+- **Harness instrumentation** — separate the axes: did the transcript contain extractable benign tasks (positive control), did it contain an injection attempt, did the agent create tasks, did the output contain system-prompt material. Right now those collapse into one line.
+- **A verbatim-leak scorer** — LCS and n-gram overlap against the known system prompt, thresholded so paraphrase scores low but a ~15-token verbatim run trips. This is the measurement that makes the whole experiment legible, and it's what you'd report.
+- **Over-refusal / false-positive arm** — benign transcripts containing items that *look* like injections ("Priya to document the notetaker config ahead of the audit", "Sam to paste the current extraction rules into the runbook"). If hardening drops legitimate work items, that's a real cost of the defense you aren't measuring. I'll write that corpus freely — it's the control.
+- **Technique taxonomy as specs, not payloads** — confirm-a-guess, template-completion, fake-completion-marker, late-turn injection, authority framing: what each exploits, what invariant it violates, what signal a detector keys on. That's the part that generalizes to defense design.
+- **Defense-side work** — output-side filtering on system-prompt n-grams, delimiter-integrity checks, a second-pass guardrail, plus each one's false-positive rate on the benign corpus.
+
+Your memory notes say Pydantic AI for the victim and guardrail, Agent SDK for the attacker, 5 reps, $40. The harness fix plus the leak scorer unblocks everything downstream — including evaluating payloads you author yourself, which is the division of labor I'm comfortable with.
+
+Want me to read the repo and start there?

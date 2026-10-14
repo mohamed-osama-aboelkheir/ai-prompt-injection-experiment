@@ -1,0 +1,4 @@
+# Installed after CPU-only torch (see Dockerfile). Kept out of the backend image on purpose:
+# llm-guard pins exact versions of transformers/regex/presidio/... that conflict with the
+# backend's Pydantic AI + provider SDK stack and make pip backtrack for many minutes.
+llm-guard==0.3.16
