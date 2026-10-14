@@ -1,7 +1,7 @@
 # AI Prompt Injection Experiment: how to attack and defend an AI agent
 
 A hands-on lab for **indirect prompt injection**. It contains a deliberately vulnerable AI app, an
-**attack agent** that generates injection payloads from the
+**attack agent** that generates injection payloads using the
 [Arcanum Prompt Injection Taxonomy](https://github.com/Arcanum-Sec/arc_pi_taxonomy), and a
 **mitigation bench** that replays those payloads against 7 defenses and several models.
 
